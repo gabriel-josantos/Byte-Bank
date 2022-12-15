@@ -1,7 +1,4 @@
-﻿using System.Net.Mail;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
+﻿
 
 namespace ByteBank1
 {
@@ -53,6 +50,7 @@ namespace ByteBank1
         {
             Console.WriteLine("Digite o CPF");
             string cpf = Console.ReadLine();
+
             if (cpfs.Contains(cpf))
             {
                 int index = cpfs.IndexOf(cpf);

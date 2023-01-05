@@ -1,69 +1,92 @@
 ﻿
+using ByteBank.Entities;
+using System.Text.Json;
 
 namespace ByteBank1
 {
     public class Program
     {
-
-        static void ShowMenu()
+        static void LerUsuarios(List<Usuario> usuarios, string fileName)
         {
-            Console.WriteLine("1 - Inserir novo usuário");
+            string jsonString = File.ReadAllText(fileName);
+
+            if (!String.IsNullOrEmpty(jsonString))
+            {
+                List<Usuario> todosUsuarios = JsonSerializer.Deserialize<List<Usuario>>(jsonString);
+                todosUsuarios.ForEach(usuario => usuarios.Add(usuario));
+            }
+
+
+        }
+        static void SerializarJson(List<Usuario> usuarios, string fileName)
+        {
+            string jsonString = JsonSerializer.Serialize(usuarios);
+            File.WriteAllText(fileName, jsonString);
+        }
+        static void MostrarMenu()
+        {
+            Console.WriteLine("<------------------------------------------->");
+            Console.WriteLine("1 - Registrar novo usuário");
             Console.WriteLine("2 - Deletar um usuário");
-            Console.WriteLine("3 - Listar todas as contas registradas");
+            Console.WriteLine("3 - Mostrar todas as contas registradas");
             Console.WriteLine("4 - Detalhes de um usuário");
             Console.WriteLine("5 - Total armazenado no banco");
             Console.WriteLine("6 - Manipular a conta");
             Console.WriteLine("0 - Para sair do programa");
+            Console.WriteLine("<-------------------------------------------->");
             Console.Write("Digite a opção desejada: ");
+      
         }
-
-        static void ShowSubMenu()
+        static void MostrarSubMenu()
         {
+            Console.WriteLine("<------------------>");
             Console.WriteLine("1 - Depositar");
             Console.WriteLine("2 - Sacar");
             Console.WriteLine("3 - Trasferir");
             Console.WriteLine("4 - Sair");
+            Console.WriteLine("<------------------>");
         }
-
-        static void RegistrarNovoUsuario(List<string> cpfs, List<string> titulares, List<string> senhas, List<double> saldos)
+        static void RegistrarNovoUsuario(List<Usuario> usuarios, string fileName)
         {
-            Console.WriteLine("Digite o cpf: ");
-            cpfs.Add(Console.ReadLine());
-            Console.WriteLine("Digite o titular: ");
-            titulares.Add(Console.ReadLine());
-            Console.WriteLine("Insira a senha: ");
-            senhas.Add(Console.ReadLine());
-            saldos.Add(0);
+            Console.Write("Digite o cpf: ");
+            string cpf = Console.ReadLine();
+            Console.Write("Digite o titular: ");
+            string titular = Console.ReadLine();
+            Console.Write("Insira a senha: ");
+            string senha = Console.ReadLine();
+
+            Usuario novoUsuario = new Usuario(cpf, titular, senha);
+            novoUsuario.GerarNumeroDaConta(usuarios);
+ 
+            SerializarJson(usuarios, fileName);
+            Console.WriteLine("<------------------------------------------->");
+            Console.WriteLine($"Usuario {novoUsuario.Titular} criado com sucesso!");
+            Console.WriteLine("<------------------------------------------->");
 
 
         }
-
-        static void ListarTodasAsContas(List<string> cpfs, List<string> titulares, List<double> saldos)
+        static void MostrarTodosUsuarios(List<Usuario> usuarios)
         {
-            for (int i = 0; i < cpfs.Count; i++)
-            {
-                Console.WriteLine($"CPF = {cpfs[i]}  | Titular = {titulares[i]} | Saldo = R${saldos[i]:F2}");
-            }
+            Console.Clear();
+            Console.WriteLine("<------------------------------------------------------------------------------->");
+            usuarios.ForEach(usuario => Console.WriteLine("| Titular: {0,-20}| CPF: {1,-5}| Saldo: R${2,-10}| Numero da conta: {3,-5}|", usuario.Titular, usuario.Cpf, usuario.Saldo, usuario.NumeroDaConta));
+            Console.WriteLine("<------------------------------------------------------------------------------->");
         }
-
-        static void DeletarUsuario(List<string> cpfs, List<string> titulares, List<string> senhas, List<double> saldos)
+        static void DeletarUsuario(List<Usuario> usuarios, string fileName)
         {
             Console.WriteLine("Digite o CPF");
-            string cpf = Console.ReadLine();
+            string cpfInput = Console.ReadLine();
 
-            if (cpfs.Contains(cpf))
+
+            if (usuarios.Exists(usuario => usuario.Cpf == cpfInput))
             {
-                int index = cpfs.IndexOf(cpf);
-                string usuario = titulares[index];
+                int userIndex = usuarios.FindIndex(usuario => usuario.Cpf == cpfInput);
+                Console.WriteLine("<------------------------------------------->");
+                Console.WriteLine($"Usuario {usuarios[userIndex].Titular} deletado com sucesso");
+                Console.WriteLine("<------------------------------------------->");
+                usuarios.RemoveAt(userIndex);
 
-
-                cpfs.RemoveAt(index);
-                titulares.RemoveAt(index);
-                saldos.RemoveAt(index);
-                senhas.RemoveAt(index);
-
-                Console.WriteLine($"Usuario {usuario} deletado com sucesso");
-
+                SerializarJson(usuarios, fileName);
 
             }
             else
@@ -73,15 +96,16 @@ namespace ByteBank1
 
 
         }
-
-        static void MostrarUsuario(List<string> cpfs, List<string> titulares, List<string> senhas, List<double> saldos)
+        static void MostrarUsuario(List<Usuario> usuarios)
         {
             Console.WriteLine("Digite o CPF");
-            string cpf = Console.ReadLine();
-            if (cpfs.Contains(cpf))
+            string cpfInput = Console.ReadLine();
+            if (usuarios.Exists(usuario => usuario.Cpf == cpfInput))
             {
-                int index = cpfs.IndexOf(cpf);
-                Console.WriteLine($"CPF = {cpfs[index]}  | Titular = {titulares[index]} | Saldo = R${saldos[index]:F2}  | Senha = {senhas[index]:F2}");
+                int userIndex = usuarios.FindIndex(usuario => usuario.Cpf == cpfInput);
+
+                Console.WriteLine($"Cpf: {usuarios[userIndex].Cpf} | Titular: {usuarios[userIndex].Titular}");
+     
             }
             else
             {
@@ -89,66 +113,68 @@ namespace ByteBank1
             }
 
 
-        }
 
-        static void MostrarTotalBancario(List<double> saldos)
+        }
+        static void MostrarTotalBancario(List<Usuario> usuarios)
         {
             double soma = 0;
-            foreach (double saldo in saldos)
-            {
-                soma += saldo;
-            }
+            usuarios.ForEach(usuario => soma += usuario.Saldo);
             Console.WriteLine($"Saldo total = R${soma:F2}");
 
         }
-
-        static void Depositar(List<double> saldos, int userIndex)
+        static void Depositar(List<Usuario> usuarios,int userIndex,string fileName)
         {
             Console.WriteLine("Digite o valor que deseja depositar");
             double deposito = double.Parse(Console.ReadLine());
             if (deposito > 0)
             {
-                saldos[userIndex] += deposito;
+                usuarios[userIndex].Saldo += deposito;
+
+                SerializarJson(usuarios, fileName);
+                Console.WriteLine("<------------------------------------------->");
                 Console.WriteLine($"Deposito no valor de R${deposito:F2} realidado com sucesso! ");
-                Console.WriteLine($"Seu saldo atual é de R${saldos[userIndex]:F2}");
+                Console.WriteLine($"Seu saldo atual é de R${usuarios[userIndex].Saldo:F2}");
+                Console.WriteLine("<------------------------------------------->");
             }
             else
             {
                 Console.WriteLine("Valor invalido");
             }
         }
-        static void Sacar(List<double> saldos, int userIndex)
+        static void Sacar(List<Usuario> usuarios, int userIndex, string fileName)
         {
             Console.WriteLine("Digite o valor que deseja sacar");
             double saque = double.Parse(Console.ReadLine());
-            if (saldos[userIndex] >= saque)
+            if (usuarios[userIndex].Saldo >= saque)
             {
-                saldos[userIndex] -= saque;
+                usuarios[userIndex].Saldo -= saque;
+                SerializarJson(usuarios, fileName);
                 Console.WriteLine($"Saque no valor de R${saque:F2} realidado com sucesso! ");
-                Console.WriteLine($"Seu saldo atual é de R${saldos[userIndex]:F2}");
+                Console.WriteLine($"Seu saldo atual é de R${usuarios[userIndex].Saldo:F2}");
             }
             else
             {
                 Console.WriteLine("saldo insuficiente");
             }
         }
-        static void Transferir(List<double> saldos, List<string> titulares, int userIndex)
+        static void Transferir(List<Usuario> usuarios, int userIndex,string fileName)
         {
-            Console.WriteLine("Digite o titular para quem deseja tranferir");
-            string destinatario = Console.ReadLine();
-
-            if (titulares.Contains(destinatario))
+            Console.Write("Digite o numero da conta para quem deseja transferir: ");
+            int numeroDaContaDestinatario = int.Parse(Console.ReadLine());
+            ;
+            if (usuarios.Exists(usuario => usuario.NumeroDaConta == numeroDaContaDestinatario))
             {
 
                 Console.WriteLine("Digite o valor que deseja tranferir");
                 double valor = double.Parse(Console.ReadLine());
 
-                if (saldos[userIndex] >= valor)
+                if (usuarios[userIndex].Saldo >= valor)
                 {
-                    int destinatarioIndex = titulares.IndexOf(destinatario);
-                    saldos[userIndex] -= valor;
-                    saldos[destinatarioIndex] += valor;
-                    Console.WriteLine($"Tranferencia no valor de R${valor:F2} para {titulares[destinatarioIndex]} realizada com sucesso");
+                    int destinatarioIndex = usuarios.FindIndex(usuario=>usuario.NumeroDaConta==numeroDaContaDestinatario);
+                    usuarios[userIndex].Saldo -= valor;
+                    usuarios[destinatarioIndex].Saldo += valor;
+                    SerializarJson(usuarios, fileName);
+                    Console.WriteLine($"Tranferencia no valor de R${valor:F2} para {usuarios[destinatarioIndex].Titular} realizada com sucesso");
                 }
                 else
                 {
@@ -159,42 +185,41 @@ namespace ByteBank1
             }
             else
             {
-                Console.WriteLine("Titular inexistente");
+                Console.WriteLine("Conta inexistente");
 
             }
 
         }
-
-
-        static void ManipularConta(List<string> cpfs, List<string> titulares, List<string> senhas, List<double> saldos)
+        static void ManipularConta(List<Usuario> usuarios,string fileName)
         {
             Console.WriteLine("Digite o CPF");
-            string cpf = Console.ReadLine();
+            string cpfInput = Console.ReadLine();
 
-            if (cpfs.Contains(cpf))
+            if (usuarios.Exists(usuario=>usuario.Cpf==cpfInput))
             {
-                int userIndex = cpfs.IndexOf(cpf);
+                int userIndex = usuarios.FindIndex(usuario => usuario.Cpf == cpfInput);
                 Console.WriteLine("Digite a senha");
 
-                if (Console.ReadLine() == senhas[userIndex])
+                if (Console.ReadLine() == usuarios[userIndex].Senha)
                 {
-                    Console.WriteLine($"Seja bem vindo {titulares[userIndex]}, qual operação voce deseja realizar?  ");
+                    Console.Clear();
+                    Console.WriteLine($"Seja bem vindo {usuarios[userIndex].Titular}, qual operação voce deseja realizar?  ");
                     int subOption;
                     do
                     {
-                        ShowSubMenu();
+                        MostrarSubMenu();
                         subOption = int.Parse(Console.ReadLine());
 
                         switch (subOption)
                         {
                             case 1:
-                                Depositar(saldos, userIndex);
+                                Depositar(usuarios,userIndex,fileName);
                                 break;
                             case 2:
-                                Sacar(saldos, userIndex);
+                                Sacar(usuarios, userIndex, fileName);
                                 break;
                             case 3:
-                                Transferir(saldos, titulares, userIndex);
+                                Transferir(usuarios, userIndex,fileName);
                                 break;
                             case 4:
                                 Console.WriteLine("Saindo da conta...");
@@ -218,29 +243,21 @@ namespace ByteBank1
             }
 
         }
-
-
         public static void Main(string[] args)
         {
+            Console.WriteLine("Seja bem vindo(a) ao Byte Bank!");
+            List<Usuario> usuarios = new List<Usuario>();
 
-            Console.WriteLine("Antes de começar a usar, vamos configurar alguns valores: ");
+            string fileName = "Usuarios.json";
 
-            Console.Write("Digite a quantidade de Usuários: ");
-            int quantidadeDeUsuarios = int.Parse(Console.ReadLine());
-
-            List<string> cpfs = new List<string>();
-            List<string> titulares = new List<string>();
-            List<string> senhas = new List<string>();
-            List<double> saldos = new List<double>();
+            LerUsuarios(usuarios, fileName);
 
             int option;
 
             do
             {
-                ShowMenu();
+                MostrarMenu();
                 option = int.Parse(Console.ReadLine());
-
-                Console.WriteLine("-----------------");
 
                 switch (option)
                 {
@@ -248,29 +265,27 @@ namespace ByteBank1
                         Console.WriteLine("Estou encerrando o programa...");
                         break;
                     case 1:
-                        RegistrarNovoUsuario(cpfs, titulares, senhas, saldos);
+                        RegistrarNovoUsuario(usuarios, fileName);
                         break;
                     case 2:
-                        DeletarUsuario(cpfs, titulares, senhas, saldos);
+                        DeletarUsuario(usuarios, fileName);
                         break;
                     case 3:
-                        ListarTodasAsContas(cpfs, titulares, saldos);
+                        MostrarTodosUsuarios(usuarios);
                         break;
                     case 4:
-                        MostrarUsuario(cpfs, titulares, senhas, saldos);
+                         MostrarUsuario(usuarios);
                         break;
                     case 5:
-                        MostrarTotalBancario(saldos);
+                        MostrarTotalBancario(usuarios);
                         break;
                     case 6:
-                        ManipularConta(cpfs, titulares, senhas, saldos);
+                        ManipularConta(usuarios,fileName);
                         break;
                     default:
                         Console.WriteLine("Opção invalida, por vafor digite opçoes entre 0, 1, 2, 3, 4, 5 ou 6");
                         break;
                 }
-
-                Console.WriteLine("-----------------");
 
             } while (option != 0);
 

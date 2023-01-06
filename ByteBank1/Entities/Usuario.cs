@@ -19,8 +19,11 @@ namespace ByteBank.Entities
         public string Cpf { get; private set; }
         public string Titular { get; set; }
         public string Senha { get; set; }
-        public int NumeroDaConta { get;set; }
+        public int NumeroDaConta { get; set; }
         public double Saldo { get; set; }
+
+        /*Não gerei o numero da conta dentro da construtora pq preciso checar se
+        algum usuario ja possui o numero da conta a ser gerado, e caso sim tentar novamente*/
         public void GerarNumeroDaConta(List<Usuario> usuarios)
         {
             Random rnd = new Random();
@@ -35,7 +38,7 @@ namespace ByteBank.Entities
 
         }
 
-        //fazer validação com property e quando não usar auto property
+        //fazer validação com property e quando não, usar auto property
 
     }
 }

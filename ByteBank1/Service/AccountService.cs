@@ -3,11 +3,6 @@ using ByteBank.Model.DTO;
 using ByteBank.Model.Entities;
 using ByteBank.Service.Exceptions;
 using ByteBank.View;
-using Microsoft.VisualBasic.FileIO;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -27,82 +22,106 @@ public class AccountService
         _loggedAccount = null;
         Agency = agency;
     }
-    public void DesserializeJson(string fileName)
+    public void DesserializeJson(string filePath)
     {
-        string jsonString = File.ReadAllText(fileName);
+        string jsonString = File.ReadAllText(filePath);
 
         if (!string.IsNullOrEmpty(jsonString))
         {
-          _accounts = JsonSerializer.Deserialize<List<Account>>(jsonString);
+            _accounts = JsonSerializer.Deserialize<List<Account>>(jsonString);
 
         }
 
     }
-    public void SerializeJson(string fileName)
+    public void SerializeJson(string filePath)
     {
         string jsonString = JsonSerializer.Serialize(_accounts);
-        File.WriteAllText(fileName, jsonString);
+        File.WriteAllText(filePath, jsonString);
     }
-    public long GerarNumeroDaConta(List<Account> usuarios)
+    public long GenerateAccountNumber(List<Account> accounts)
     {
         Random rnd = new Random();
-        long numeroGerado = rnd.Next(100, 1000);
+        long generatedNumber = rnd.Next(100, 1000);
 
-        while (usuarios.Exists(usuario => usuario.AccountNumber == numeroGerado))
+        while (accounts.Exists(account => account.AccountNumber == generatedNumber))
         {
-            numeroGerado = rnd.Next(100, 1000);
+            generatedNumber = rnd.Next(100, 1000);
         }
 
-        return numeroGerado;
+        return generatedNumber;
     }
     public void Logout()
     {
         _loggedAccount = null;
     }
 
+    public bool IsUserAdmin(Account account)
+    {
+        return account.Permission.Equals("admin");
+    }
+
     public void Login(LoginFormDto loginForm)
     {
         if (!DoesAccountExists(loginForm.Cpf))
-            return;
+            throw new AccountDoesNotExistsException("Essa conta nao exite");
         if (!DoesPasswordsMatch(loginForm))
             throw new PasswordDoesNotMatchException("A senha está incorreta");
 
         Account account = FindAccount(loginForm.Cpf);
 
         if (account.IsBlocked)
-            throw new AccountIsBlockedException("A conta não está autorizada");
+            throw new UserNotAuthorizedException("A conta não está autorizada");
+
+        _loggedAccount = account;
+    }
+    public void Login(LoginFormDto loginForm, string admin)
+    {
+        if (!DoesAccountExists(loginForm.Cpf))
+            throw new AccountDoesNotExistsException("Essa conta nao exite");
+        if (!DoesPasswordsMatch(loginForm))
+            throw new PasswordDoesNotMatchException("A senha está incorreta");
+
+        Account account = FindAccount(loginForm.Cpf);
+
+        if (account.IsBlocked)
+            throw new UserNotAuthorizedException("A conta não está autorizada");
+
+        if (!IsUserAdmin(account))
+            throw new UserNotAuthorizedException("Este usuario nao possui permissao de administrador");
+
 
         _loggedAccount = account;
     }
 
-    public void CreateUser(string fileName)
+    public void CreateUser(string filedPath)
     {
         Console.Write("Digite o cpf do usuario que deseja cadastrar: ");
         string cpf = Console.ReadLine();
-        while (_accounts.Exists(conta => conta.Cpf.Equals(cpf)))
+
+        while (DoesAccountExists(cpf))
         {
             Console.WriteLine("Este Cpf ja esta sendo utilizado por outro usuario, por favor digite novamente");
             cpf = Console.ReadLine();
         }
         Console.Write("Digite o nome do usuario que deseja cadastrar: ");
-        string titular = Console.ReadLine();
+        string name = Console.ReadLine();
         Console.Write("Digite a senha que deseja cadastrar ( mínimo de 8 caracteres) : ");
-        string senha = Console.ReadLine();
+        string password = Console.ReadLine();
 
-        while (string.IsNullOrEmpty(senha) || senha.Length < 8)
+        while (string.IsNullOrEmpty(password) || password.Length < 8)
         {
             Console.WriteLine("A senha não possui 8 caracteres, por favor digite novamente");
-            senha = Console.ReadLine();
+            password = Console.ReadLine();
         }
 
-        Account novaConta = new Account(cpf, titular, senha, GerarNumeroDaConta(_accounts));
-        _accounts.Add(novaConta);
+        Account newAccount = new Account(cpf, name, password, GenerateAccountNumber(_accounts), "user");
+        _accounts.Add(newAccount);
 
-        SerializeJson(fileName);
+        SerializeJson(filedPath);
 
         Console.Clear();
         Console.WriteLine("<---------------------------------------------->");
-        Console.WriteLine($"Usuario {novaConta.Name} criado com sucesso!");
+        Console.WriteLine($"Usuario {newAccount.Name} criado com sucesso!");
         Console.WriteLine("<---------------------------------------------->");
         ShowUser(true);
 
@@ -120,7 +139,7 @@ public class AccountService
         Console.WriteLine("<--------------------------------------------------------------------------------->");
     }
 
-    public void DeleteUser(string fileName)
+    public void DeleteUser(string filePath)
     {
         Console.WriteLine("Digite o CPF do usuario que deseja deletar");
         string cpfInput = Console.ReadLine();
@@ -134,7 +153,7 @@ public class AccountService
             Console.WriteLine($"Usuario {conta.Name} deletado com sucesso");
             Console.WriteLine("<---------------------------------------------->");
             _accounts.Remove(conta);
-            SerializeJson(fileName);
+            SerializeJson(filePath);
 
         }
         else
@@ -208,7 +227,7 @@ public class AccountService
 
     }
 
-    public void Deposit()
+    public void Deposit(string filePath)
     {
 
         Console.WriteLine("Digite o valor que deseja depositar na sua conta");
@@ -219,6 +238,8 @@ public class AccountService
 
         _loggedAccount.Deposit(depositAmount);
 
+        SerializeJson(filePath);
+
         Console.Clear();
         Console.WriteLine("<---------------------------------------------->");
         Console.WriteLine($"Deposito no valor de R${depositAmount:F2} realidado com sucesso! ");
@@ -226,7 +247,7 @@ public class AccountService
 
     }
 
-    public void Withdraw()
+    public void Withdraw(string filePath)
     {
 
         Console.WriteLine("Digite o valor que deseja sacar de sua conta");
@@ -236,6 +257,8 @@ public class AccountService
             throw new InsuficientBalanceException();
 
         _loggedAccount.Withdraw(withdrawalAmount);
+
+        SerializeJson(filePath);
         Console.Clear();
         Console.WriteLine("<---------------------------------------------->");
         Console.WriteLine($"Deposito no valor de R${withdrawalAmount:F2} realidado com sucesso! ");
@@ -245,7 +268,7 @@ public class AccountService
 
     }
 
-    public void Transfer()
+    public void Transfer(string filePath)
     {
 
         Console.Write("Digite o cpf da conta que deseja tranferir: ");
@@ -267,6 +290,8 @@ public class AccountService
 
         _loggedAccount.Transfer(transferAmount, destinationAccount);
 
+        SerializeJson(filePath);
+
         Console.Clear();
         Console.WriteLine("<---------------------------------------------->");
         Console.WriteLine($"Tranferencia no valor de R${transferAmount:F2} para {destinationAccount.Name} realizada com sucesso");
@@ -275,7 +300,7 @@ public class AccountService
 
     }
 
-    public void ChangePassword()
+    public void ChangePassword(string filePath)
     {
         Console.Write("Por favor digite a sua senha atual: ");
         string currentPassword = Console.ReadLine();
@@ -283,6 +308,7 @@ public class AccountService
         string newPassword = Console.ReadLine();
         // contaAtual.Senha = novaSenha;
         Console.Clear();
+        SerializeJson(filePath);
         Console.WriteLine("Senha alterada com sucesso");
     }
 
@@ -293,81 +319,89 @@ public class AccountService
     }
 
 
-    public void ShowUserAccountOptions()
+    public void UserAccountOptions(string filePath)
     {
-        int accOption;
+        int option;
         do
         {
             MenuView.ShowUserMenu(_loggedAccount);
-
-            accOption = int.Parse(Console.ReadLine());
-
-            switch (accOption)
+            option = int.Parse(Console.ReadLine());
+            try
             {
-                case 1:
-                    Deposit();
-                    break;
-                case 2:
-                    Withdraw();
-                    break;
-                case 3:
-                    Transfer();
-                    break;
-                case 4:
-                    ChangePassword();
-                    break;
-                case 5:
-                    Console.Clear();
-                    Logout();
-                    Console.WriteLine("Obrigado por usar o ByteBank, volte sempre :)");
-                    break;
-                default:
-                    Console.WriteLine("Opção invalida, por favor digite opçoes entre 1, 2, 3, 4 ou 5");
-                    break;
+                switch (option)
+                {
+                    case 1:
+                        Deposit(filePath);
+                        break;
+                    case 2:
+                        Withdraw(filePath);
+                        break;
+                    case 3:
+                        Transfer(filePath);
+                        break;
+                    case 4:
+                        ChangePassword(filePath);
+                        break;
+                    case 5:
+                        Console.Clear();
+                        Logout();
+                        Console.WriteLine("Obrigado por usar o ByteBank, volte sempre :)");
+                        break;
+                    default:
+                        Console.WriteLine("Opção invalida, por favor digite opçoes entre 1, 2, 3, 4 ou 5");
+                        break;
+                }
+            }
+            catch (InsuficientBalanceException ex)
+            {
+                Console.WriteLine(ex.Message);
             }
         }
-        while (accOption != 5);
+        while (option != 5);
     }
 
-    public void ShowMainMenuOptions(int option, string fileName)
+    public void AdminAccoutOptions(string filePath)
     {
-
-        try
+        int option;
+        do
         {
-            switch (option)
+            MenuView.ShowAdminMenu();
+            option = int.Parse(Console.ReadLine());
+            try
             {
-                case 0:
-                    Console.WriteLine("Estou encerrando o programa...");
-                    break;
-                case 1:
-                    CreateUser(fileName);
-                    break;
-                case 2:
-                    DeleteUser(fileName);
-                    break;
-                case 3:
-                    ShowAllUsers();
-                    break;
-                case 4:
-                    ShowUser(false);
-                    break;
-                case 5:
-                    ShowBankBalance();
-                    break;
-                case 6:
-                    var loginForm = AccountView.MenuLogin();
-                    Login(loginForm);
-                    ShowUserAccountOptions();
-                    break;
-                default:
-                    Console.WriteLine("Opção invalida, por vafor digite opçoes entre 0, 1, 2, 3, 4, 5 ou 6");
-                    break;
+                switch (option)
+                {
+
+                    case 1:
+                        CreateUser(filePath);
+                        break;
+                    case 2:
+                        DeleteUser(filePath);
+                        break;
+                    case 3:
+                        ShowAllUsers();
+                        break;
+                    case 4:
+                        ShowUser(false);
+                        break;
+                    case 5:
+                        ShowBankBalance();
+                        break;
+                    case 6:
+                        Console.Clear();
+                        Logout();
+                        Console.WriteLine("Obrigado por usar o ByteBank, volte sempre :)");
+                        break;
+                    default:
+                        Console.WriteLine("Opção invalida, por vafor digite opçoes entre 0, 1, 2, 3, 4, 5 ou 6");
+                        break;
+                }
             }
-        }
-        catch (InsuficientBalanceException ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
+            catch (PasswordDoesNotMatchException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+        } while (option != 6);
     }
 
 

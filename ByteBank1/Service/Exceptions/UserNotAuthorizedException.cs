@@ -6,11 +6,8 @@ using System.Threading.Tasks;
 
 namespace ByteBank.Service.Exceptions
 {
-    public class AccountDoesNotExistsException : AccountException
+    public class UserNotAuthorizedException : AccountException
     {
-        public AccountDoesNotExistsException(string msg) : base(msg)
-        {
-
-        }
+       public UserNotAuthorizedException(string msg) : base(msg) { }
     }
 }

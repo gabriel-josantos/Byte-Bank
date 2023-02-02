@@ -16,7 +16,8 @@ namespace ByteBank.Model.Entities
         public long AccountNumber { get; private set; }
         public double Balance { get; private set; }
         public bool IsBlocked { get; private set; }
-        public Account(string cpf, string name, string password, long accountNumber)
+        public string Permission { get; private set; }
+        public Account(string cpf, string name, string password, long accountNumber,string permission)
         {
             Cpf = cpf;
             Name = name;
@@ -24,7 +25,7 @@ namespace ByteBank.Model.Entities
             AccountNumber = accountNumber;
             Balance = 0.00;
             IsBlocked = false;
-
+            Permission = permission;
         }
 
         public void Deposit(double amount)

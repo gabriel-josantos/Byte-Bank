@@ -10,16 +10,26 @@ namespace ByteBank.View
 {
     public class MenuView
     {
-        public static void ShowMainMenu()
+
+        public static void ShowInitialMenu()
+        {
+            Console.WriteLine("<---------------------------------------------->");
+            Console.WriteLine("Seja bem vindo ao ByteBank");
+            Console.WriteLine("<---------------------------------------------->");
+            Console.WriteLine("0 - Sair do programa");
+            Console.WriteLine("1 - Fazer login (admin)");
+            Console.WriteLine("2 - Fazer login (usuario)");
+            Console.WriteLine("<---------------------------------------------->");
+            Console.Write("Digite a opção desejada: ");
+        }
+        public static void ShowAdminMenu()
         {
             Console.WriteLine("<---------------------------------------------->");
             Console.WriteLine("1 - Registrar novo usuário");
             Console.WriteLine("2 - Deletar um usuário");
             Console.WriteLine("3 - Mostrar todas as contas cadastradas");
             Console.WriteLine("4 - Detalhes de um usuário");
-            Console.WriteLine("5 - Total armazenado no banco");
-            Console.WriteLine("6 - Fazer login na sua conta");
-            Console.WriteLine("0 - Para sair do programa");
+            Console.WriteLine("5 - Logout");
             Console.WriteLine("<---------------------------------------------->");
             Console.Write("Digite a opção desejada: ");
         }
@@ -32,7 +42,7 @@ namespace ByteBank.View
             Console.WriteLine("2 - Sacar");
             Console.WriteLine("3 - Trasferir");
             Console.WriteLine("4 - Alterar Senha");
-            Console.WriteLine("5 - Sair");
+            Console.WriteLine("5 - Logout");
             Console.WriteLine("<------------------>");
         }
 

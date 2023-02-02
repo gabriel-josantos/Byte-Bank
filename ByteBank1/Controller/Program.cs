@@ -15,19 +15,33 @@ namespace ByteBank.Controller
         public static void Main(string[] args)
         {
             AccountService accountService = new AccountService("1288");
-            string fileName = "Contas.json";
+            string filePath = @"..\..\..\..\data\Contas.json";
 
-            accountService.DesserializeJson(fileName);
+            accountService.DesserializeJson(filePath);
 
             int option;
 
             do
             {
-                MenuView.ShowMainMenu();
+                MenuView.ShowInitialMenu();
+
                 option = int.Parse(Console.ReadLine());
+                switch (option)
+                {
+                    case 1:
+                        var loginFormAdmin = AccountView.MenuLogin();
+                        accountService.Login(loginFormAdmin, "admin");
+                        accountService.AdminAccoutOptions(filePath);
+                        break;
+                    case 2:
+                        var loginFormUser = AccountView.MenuLogin();
+                        accountService.Login(loginFormUser);
+                        accountService.UserAccountOptions(filePath);
+                        break;
+                    default:
+                        break;
 
-                accountService.ShowMainMenuOptions(option, fileName);
-
+                }
 
             } while (option != 0);
 

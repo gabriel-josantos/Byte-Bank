@@ -1,8 +1,7 @@
-﻿using System.Runtime.Serialization;
-
+﻿
 namespace ByteBank.Service.Exceptions;
 
-public class InvalidAmountException : Exception
+public class InvalidAmountException : AccountException
 {
     public InvalidAmountException(string msg) : base(msg) { }
 

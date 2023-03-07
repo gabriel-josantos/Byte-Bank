@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ByteBank.Helpers;
 using ByteBank.Service;
 
 namespace ByteBank.Model.Entities
@@ -14,10 +13,10 @@ namespace ByteBank.Model.Entities
         public string Name { get; private set; }
         public string Password { get; private set; }
         public long AccountNumber { get; private set; }
-        public double Balance { get; private set; }
-        public bool IsBlocked { get; private set; }
-        public string Permission { get; private set; }
-        public Account(string cpf, string name, string password, long accountNumber,string permission)
+        public double Balance { get; set; } //Tem que ser private
+        public bool IsBlocked { get; set; } //Tem que ser private
+        public string Permission { get; set; }//Tem que ser private
+        public Account(string cpf, string name, string password, long accountNumber)
         {
             Cpf = cpf;
             Name = name;
@@ -25,7 +24,7 @@ namespace ByteBank.Model.Entities
             AccountNumber = accountNumber;
             Balance = 0.00;
             IsBlocked = false;
-            Permission = permission;
+            Permission = "user";
         }
 
         public void Deposit(double amount)
@@ -46,7 +45,15 @@ namespace ByteBank.Model.Entities
 
         }
 
+        public void BlockAccount() {
+            IsBlocked = true;
+        }
 
+
+        public void UnblockAccount()
+        {
+            IsBlocked = false;
+        }
 
     }
 }

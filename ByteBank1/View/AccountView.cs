@@ -15,10 +15,10 @@ namespace ByteBank.View
         {
 
             Console.Clear();
-            Console.WriteLine("Digite seu cpf");
+            Console.Write("Digite seu cpf: ");
             string cpfInput = Console.ReadLine(); ;
 
-            Console.WriteLine("Digite sua senha");
+            Console.Write("Digite sua senha: ");
             string passInput = Console.ReadLine();
 
             return new LoginFormDto

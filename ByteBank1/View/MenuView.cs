@@ -29,7 +29,10 @@ namespace ByteBank.View
             Console.WriteLine("2 - Deletar um usuário");
             Console.WriteLine("3 - Mostrar todas as contas cadastradas");
             Console.WriteLine("4 - Detalhes de um usuário");
-            Console.WriteLine("5 - Logout");
+            Console.WriteLine("5 - Saldo total no banco");
+            Console.WriteLine("6 - Bloquear conta");
+            Console.WriteLine("7 - Desbloquear conta");
+            Console.WriteLine("8 - Logout");
             Console.WriteLine("<---------------------------------------------->");
             Console.Write("Digite a opção desejada: ");
         }

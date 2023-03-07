@@ -1,4 +1,5 @@
-﻿using ByteBank.Helpers;
+﻿
+using ByteBank.Model.DTO;
 using ByteBank.Model.Entities;
 using ByteBank.Service;
 using ByteBank.Service.Exceptions;
@@ -26,21 +27,31 @@ namespace ByteBank.Controller
                 MenuView.ShowInitialMenu();
 
                 option = int.Parse(Console.ReadLine());
-                switch (option)
+                try
                 {
-                    case 1:
-                        var loginFormAdmin = AccountView.MenuLogin();
-                        accountService.Login(loginFormAdmin, "admin");
-                        accountService.AdminAccoutOptions(filePath);
-                        break;
-                    case 2:
-                        var loginFormUser = AccountView.MenuLogin();
-                        accountService.Login(loginFormUser);
-                        accountService.UserAccountOptions(filePath);
-                        break;
-                    default:
-                        break;
+                    switch (option)
+                    {
+                        case 1:
+                            LoginFormDto loginFormAdmin = AccountView.MenuLogin();
+                            accountService.Login(loginFormAdmin, "admin");
+                            accountService.AdminAccoutOptions(filePath);
+                            break;
+                        case 2:
+                            LoginFormDto loginFormUser = AccountView.MenuLogin();
+                            accountService.Login(loginFormUser);
+                            accountService.UserAccountOptions(filePath);
+                            break;
+                        default:
+                            break;
 
+                    }
+                }
+                catch (UserNotAuthorizedException ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }catch(AccountDoesNotExistsException ex)
+                {
+                    Console.WriteLine(ex.Message);
                 }
 
             } while (option != 0);

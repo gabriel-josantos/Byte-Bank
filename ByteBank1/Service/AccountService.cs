@@ -1,4 +1,4 @@
-﻿using ByteBank.Helpers;
+﻿
 using ByteBank.Model.DTO;
 using ByteBank.Model.Entities;
 using ByteBank.Service.Exceptions;
@@ -65,12 +65,12 @@ public class AccountService
         if (!DoesAccountExists(loginForm.Cpf))
             throw new AccountDoesNotExistsException("Essa conta nao exite");
         if (!DoesPasswordsMatch(loginForm))
-            throw new PasswordDoesNotMatchException("A senha está incorreta");
+            throw new UserNotAuthorizedException("A senha está incorreta");
 
         Account account = FindAccount(loginForm.Cpf);
 
         if (account.IsBlocked)
-            throw new UserNotAuthorizedException("A conta não está autorizada");
+            throw new UserNotAuthorizedException("A conta está bloqueada");
 
         _loggedAccount = account;
     }
@@ -79,12 +79,12 @@ public class AccountService
         if (!DoesAccountExists(loginForm.Cpf))
             throw new AccountDoesNotExistsException("Essa conta nao exite");
         if (!DoesPasswordsMatch(loginForm))
-            throw new PasswordDoesNotMatchException("A senha está incorreta");
+            throw new UserNotAuthorizedException("A senha está incorreta");
 
         Account account = FindAccount(loginForm.Cpf);
 
         if (account.IsBlocked)
-            throw new UserNotAuthorizedException("A conta não está autorizada");
+            throw new UserNotAuthorizedException("A conta está bloqueada");
 
         if (!IsUserAdmin(account))
             throw new UserNotAuthorizedException("Este usuario nao possui permissao de administrador");
@@ -114,7 +114,7 @@ public class AccountService
             password = Console.ReadLine();
         }
 
-        Account newAccount = new Account(cpf, name, password, GenerateAccountNumber(_accounts), "user");
+        Account newAccount = new Account(cpf, name, password, GenerateAccountNumber(_accounts));
         _accounts.Add(newAccount);
 
         SerializeJson(filedPath);
@@ -123,7 +123,12 @@ public class AccountService
         Console.WriteLine("<---------------------------------------------->");
         Console.WriteLine($"Usuario {newAccount.Name} criado com sucesso!");
         Console.WriteLine("<---------------------------------------------->");
-        ShowUser(true);
+        Console.WriteLine("<---------------------------------------------->");
+        Console.WriteLine($" Titular: {newAccount.Name}");
+        Console.WriteLine($" CPF: {newAccount.Cpf}");
+        Console.WriteLine($" Numero da conta: {newAccount.AccountNumber}");
+        Console.WriteLine("<---------------------------------------------->");
+
 
     }
 
@@ -133,69 +138,83 @@ public class AccountService
         Console.WriteLine("<--------------------------------------------------------------------------------->");
         _accounts.ForEach(account =>
         {
-            string saldo = $"{account.Balance:F2}";
-            Console.WriteLine("| Titular: {0,-20}| CPF: {1,-5}| Saldo: R${2,-10}| Numero da conta: {3,-5}|", account.Name, account.Cpf, saldo, account.AccountNumber);
+            string balance = $"{account.Balance:F2}";
+            Console.WriteLine("| Titular: {0,-20}| CPF: {1,-5}| Saldo: R${2,-10}| Numero da conta: {3,-5}|", account.Name, account.Cpf, balance, account.AccountNumber);
         });
         Console.WriteLine("<--------------------------------------------------------------------------------->");
     }
 
+    public void BlockAccount(string filePath)
+    {
+        Console.Write("Digite o CPF do usuario da conta que deseja bloquear: ");
+        string cpfInput = Console.ReadLine();
+
+        if (!DoesAccountExists(cpfInput))
+            throw new AccountDoesNotExistsException("Essa conta nao existe");
+
+        Account account = FindAccount(cpfInput);
+        account.BlockAccount();
+
+        Console.WriteLine($"A conta de {account.Name} bloqueada com sucesso");
+
+        SerializeJson(filePath);
+
+    }
+
+    public void UnblockAccount(string filePath)
+    {
+        Console.Write("Digite o CPF do usuario da conta que deseja desbloquear: ");
+        string cpfInput = Console.ReadLine();
+
+        if (!DoesAccountExists(cpfInput))
+            throw new AccountDoesNotExistsException("Essa conta nao existe");
+
+        Account account = FindAccount(cpfInput);
+        account.UnblockAccount();
+
+        Console.WriteLine($"A conta de {account.Name} desbloqueada com sucesso");
+
+        SerializeJson(filePath);
+
+    }
+
     public void DeleteUser(string filePath)
     {
-        Console.WriteLine("Digite o CPF do usuario que deseja deletar");
+        Console.Write("Digite o CPF do usuario que deseja deletar: ");
         string cpfInput = Console.ReadLine();
 
 
-        if (DoesAccountExists(cpfInput))
-        {
-            Account conta = FindAccount(cpfInput);
-            Console.Clear();
-            Console.WriteLine("<---------------------------------------------->");
-            Console.WriteLine($"Usuario {conta.Name} deletado com sucesso");
-            Console.WriteLine("<---------------------------------------------->");
-            _accounts.Remove(conta);
-            SerializeJson(filePath);
+        if (!DoesAccountExists(cpfInput))
+            throw new AccountDoesNotExistsException("essa conta nao existe");
 
-        }
-        else
-        {
-            Console.WriteLine("Usuario inexistente");
-        }
+        Account account = FindAccount(cpfInput);
+        Console.Clear();
+        Console.WriteLine("<---------------------------------------------->");
+        Console.WriteLine($"Usuario {account.Name} deletado com sucesso");
+        Console.WriteLine("<---------------------------------------------->");
+        _accounts.Remove(account);
+        SerializeJson(filePath);
 
 
     }
 
-    public void ShowUser(bool criação)
+    public void ShowUserInfo()
     {
-        if (criação)
-        {
-            Console.WriteLine("<---------------------------------------------->");
-            Console.WriteLine($" Titular: {_accounts[_accounts.Count - 1].Name}");
-            Console.WriteLine($" CPF: {_accounts[_accounts.Count - 1].Cpf}");
-            Console.WriteLine($" Numero da conta: {_accounts[_accounts.Count - 1].AccountNumber}");
-            Console.WriteLine("<---------------------------------------------->");
-        }
-        else
-        {
-            Console.WriteLine("Digite o CPF do usuario que deseja visualizar");
-            string cpfInput = Console.ReadLine();
+        Console.Write("Digite o CPF do usuario que deseja visualizar: ");
+        string cpfInput = Console.ReadLine();
 
-            if (DoesAccountExists(cpfInput))
-            {
-                Console.Clear();
-                Account account = FindAccount(cpfInput);
-                Console.WriteLine("<---------------------------------------------->");
-                Console.WriteLine($" Titular: {account.Name}");
-                Console.WriteLine($" CPF: {account.Cpf}");
-                Console.WriteLine($" Numero da conta: {account.AccountNumber}");
-                Console.WriteLine($" Bloqueada: {account.IsBlocked}");
-                Console.WriteLine("<---------------------------------------------->");
-            }
-            else
-            {
-                Console.WriteLine("Usuario inexistente");
-            }
+        if (!DoesAccountExists(cpfInput))
+            throw new AccountDoesNotExistsException("Essa conta nao existe");
 
-        }
+        Console.Clear();
+        Account account = FindAccount(cpfInput);
+        Console.WriteLine("<---------------------------------------------->");
+        Console.WriteLine($" Titular: {account.Name}");
+        Console.WriteLine($" CPF: {account.Cpf}");
+        Console.WriteLine($" Numero da conta: {account.AccountNumber}");
+        Console.WriteLine($" Bloqueada: {account.IsBlocked}");
+        Console.WriteLine("<---------------------------------------------->");
+
     }
 
     public void ShowBankBalance()
@@ -261,7 +280,7 @@ public class AccountService
         SerializeJson(filePath);
         Console.Clear();
         Console.WriteLine("<---------------------------------------------->");
-        Console.WriteLine($"Deposito no valor de R${withdrawalAmount:F2} realidado com sucesso! ");
+        Console.WriteLine($"Saque no valor de R${withdrawalAmount:F2} realidado com sucesso! ");
         Console.WriteLine("<---------------------------------------------->");
 
 
@@ -356,6 +375,18 @@ public class AccountService
             {
                 Console.WriteLine(ex.Message);
             }
+            catch (InvalidAmountException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            catch (AccountDoesNotExistsException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            catch (UserNotAuthorizedException ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
         while (option != 5);
     }
@@ -382,12 +413,18 @@ public class AccountService
                         ShowAllUsers();
                         break;
                     case 4:
-                        ShowUser(false);
+                        ShowUserInfo();
                         break;
                     case 5:
                         ShowBankBalance();
                         break;
                     case 6:
+                        BlockAccount(filePath);
+                        break;
+                    case 7:
+                        UnblockAccount(filePath);
+                        break;
+                    case 8:
                         Console.Clear();
                         Logout();
                         Console.WriteLine("Obrigado por usar o ByteBank, volte sempre :)");
@@ -397,11 +434,11 @@ public class AccountService
                         break;
                 }
             }
-            catch (PasswordDoesNotMatchException ex)
+            catch (AccountDoesNotExistsException ex)
             {
                 Console.WriteLine(ex.Message);
             }
-        } while (option != 6);
+        } while (option != 8);
     }
 
 
